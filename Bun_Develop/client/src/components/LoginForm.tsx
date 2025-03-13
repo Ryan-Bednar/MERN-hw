@@ -1,61 +1,58 @@
 // see SignupForm.js for comments
 import { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
-import { Form, Button, Alert } from 'react-bootstrap';
+import { Form, Button } from 'react-bootstrap';
 
-import { loginUser } from '../utils/API';
 import Auth from '../utils/auth';
-import type { User } from '../models/User';
+import { useMutation } from '@apollo/client';
+import { LOGIN_USER } from '../utils/mutations';
+import { Link } from 'react-router-dom';
 
 // biome-ignore lint/correctness/noEmptyPattern: <explanation>
 const LoginForm = ({}: { handleModalClose: () => void }) => {
-  const [userFormData, setUserFormData] = useState<User>({ username: '', email: '', password: '', savedBooks: [] });
-  const [validated] = useState(false);
-  const [showAlert, setShowAlert] = useState(false);
+  const [ formState, setFormState] = useState({
+      email: '',
+      password: '',
+    });
+  const [login, { data, error}] = useMutation(LOGIN_USER);
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
-    setUserFormData({ ...userFormData, [name]: value });
+    setFormState({ ...formState, [name]: value });
   };
 
-  const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleFormSubmit = async (event: FormEvent) => {
     event.preventDefault();
+    console.log(formState)
 
     // check if form has everything (as per react-bootstrap docs)
-    const form = event.currentTarget;
-    if (form.checkValidity() === false) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
 
     try {
-      const response = await loginUser(userFormData);
+      const { data } = await login({
+        variables: {...formState},
+      });
 
-      if (!response.ok) {
-        throw new Error('something went wrong!');
-      }
-
-      const { token } = await response.json();
-      Auth.login(token);
-    } catch (err) {
-      console.error(err);
-      setShowAlert(true);
+      Auth.login(data.login.token)
+    } catch (error) {
+      console.error(error);
     }
 
-    setUserFormData({
-      username: '',
+    setFormState({
       email: '',
-      password: '',
-      savedBooks: [],
-    });
+      password: ''
+    })
+
   };
 
   return (
     <>
-      <Form noValidate validated={validated} onSubmit={handleFormSubmit}>
-        <Alert dismissible onClose={() => setShowAlert(false)} show={showAlert} variant='danger'>
-          Something went wrong with your login credentials!
-        </Alert>
+    {data ? (
+              <p>
+                Success! You may now head{' '}
+                <Link to="/">back to the homepage.</Link>
+              </p>
+            ) : (
+      <Form noValidate  onSubmit={handleFormSubmit}>
         <Form.Group className='mb-3'>
           <Form.Label htmlFor='email'>Email</Form.Label>
           <Form.Control
@@ -63,7 +60,7 @@ const LoginForm = ({}: { handleModalClose: () => void }) => {
             placeholder='Your email'
             name='email'
             onChange={handleInputChange}
-            value={userFormData.email || ''}
+            value={formState.email || ''}
             required
           />
           <Form.Control.Feedback type='invalid'>Email is required!</Form.Control.Feedback>
@@ -76,18 +73,24 @@ const LoginForm = ({}: { handleModalClose: () => void }) => {
             placeholder='Your password'
             name='password'
             onChange={handleInputChange}
-            value={userFormData.password || ''}
+            value={formState.password || ''}
             required
           />
           <Form.Control.Feedback type='invalid'>Password is required!</Form.Control.Feedback>
         </Form.Group>
         <Button
-          disabled={!(userFormData.email && userFormData.password)}
+          disabled={!(formState.email && formState.password)}
           type='submit'
           variant='success'>
           Submit
         </Button>
       </Form>
+    )}
+      {error && (
+              <div className="my-3 p-3 bg-danger text-white">
+                {error.message}
+              </div>
+      )}
     </>
   );
 };

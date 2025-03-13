@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc",
     "start": "bun src/server.ts",
-    "watch": "bun --watch server.ts",
+    "watch": "bun --watch src/server.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

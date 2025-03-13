@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction } from 'express';
+// import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { GraphQLError } from 'graphql'
 
@@ -11,24 +11,32 @@ interface JwtPayload {
   email: string,
 }
 
-export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
+export const authenticateToken = ({ req }: { req: any}) => {
   const authHeader = req.headers.authorization;
-
   if (authHeader) {
     const token = authHeader.split(' ')[1];
-
     const secretKey = process.env.JWT_SECRET_KEY || '';
 
-    jwt.verify(token, secretKey, (err, user) => {
-      if (err) {
-        return res.sendStatus(403); // Forbidden
-      }
+    const data = jwt.verify(token, secretKey);
 
-      req.user = user as JwtPayload;
-      return next();
-    });
+    req.user = data as JwtPayload;
+    return req;
+
+    // jwt.verify(token, secretKey, (err: any, user: any) => {
+
+    //   if (err) {
+    //     // return res.sendStatus(403); // Forbidden
+
+    //     return req;
+    //   }
+    //   req.user = user as JwtPayload;
+    //   return req;
+    //   // return next();
+    // });
   } else {
-    res.sendStatus(401); // Unauthorized
+    // res.sendStatus(401); // Unauthorized
+    console.log("No token!")
+    return req;
   }
 };
 
