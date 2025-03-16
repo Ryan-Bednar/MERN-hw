@@ -1,12 +1,11 @@
 const typeDefs = `#graphql
 
-
     type User {
         _id: String,
         username: String,
         email: String,
         bookCount: Int,
-        savedBooks: [Book]
+        savedBooks: [Book]!
     }    
 
     input BookInput{
